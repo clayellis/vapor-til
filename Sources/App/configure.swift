@@ -1,4 +1,5 @@
-import FluentSQLite
+//import FluentSQLite
+import FluentPostgreSQL
 import Vapor
 
 /// Called before your application initializes.
@@ -10,7 +11,8 @@ public func configure(
     _ services: inout Services
 ) throws {
     /// Register providers first
-    try services.register(FluentSQLiteProvider())
+//    try services.register(FluentSQLiteProvider())
+    try services.register(FluentPostgreSQLProvider())
 
     /// Register routes to the router
     let router = EngineRouter.default()
@@ -25,23 +27,39 @@ public func configure(
     services.register(middlewares)
 
     // Configure a SQLite database
-    let sqlite: SQLiteDatabase
-    if env.isRelease {
-        /// Create file-based SQLite db using $SQLITE_PATH from process env
-        sqlite = try SQLiteDatabase(storage: .file(path: Environment.get("SQLITE_PATH")!))
-    } else {
-        /// Create an in-memory SQLite database
-        sqlite = try SQLiteDatabase(storage: .memory)
-    }
+//    let sqlite: SQLiteDatabase
+//    if env.isRelease {
+//        /// Create file-based SQLite db using $SQLITE_PATH from process env
+//        sqlite = try SQLiteDatabase(storage: .file(path: Environment.get("SQLITE_PATH")!))
+//    } else {
+//        /// Create an in-memory SQLite database
+//        sqlite = try SQLiteDatabase(storage: .memory)
+//    }
+//
+//    /// Register the configured SQLite database to the database config.
+//    var databases = DatabaseConfig()
+//    databases.add(database: sqlite, as: .sqlite)
+//    services.register(databases)
 
-    /// Register the configured SQLite database to the database config.
+    // Configure a PostgreSQL database
     var databases = DatabaseConfig()
-    databases.add(database: sqlite, as: .sqlite)
+    let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+    let username = Environment.get("DATABASE_USER") ?? "vapor"
+    let databaseName = Environment.get("DATABASE_DB") ?? "vapor"
+    let password = Environment.get("DATABASE_PASSWORD") ?? "password"
+    let postgresConfig = PostgreSQLDatabaseConfig(
+        hostname: hostname,
+        username: username,
+        database: databaseName,
+        password: password)
+    let postgresDB = PostgreSQLDatabase(config: postgresConfig)
+    databases.add(database: postgresDB, as: .psql)
     services.register(databases)
 
     /// Configure migrations
     var migrations = MigrationConfig()
-    migrations.add(model: Acronym.self, database: .sqlite)
+//    migrations.add(model: Acronym.self, database: .sqlite)
+    migrations.add(model: Acronym.self, database: .psql)
     services.register(migrations)
 
 }
